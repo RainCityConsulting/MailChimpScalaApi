@@ -1,0 +1,100 @@
+<project name="mailchimp-api" default="compile" basedir=".">
+
+  <property name="name" value="mailchimp-api"/>
+
+  <loadfile property="version" srcFile="${basedir}/.version">
+    <filterchain>
+      <striplinebreaks/>
+    </filterchain>
+  </loadfile>
+
+  <path id="classpath">
+    <fileset dir="lib">
+      <include name="*.jar"/>
+    </fileset>
+    <pathelement location="target/classes"/>
+  </path>
+
+  <path id="build.classpath">
+    <path refid="classpath"/>
+    <fileset dir="build/lib">
+      <include name="*.jar"/>
+    </fileset>
+  </path>
+
+  <path id="test.classpath">
+    <path refid="build.classpath"/>
+    <pathelement location="target/test-classes"/>
+  </path>
+
+  <taskdef resource="scala/tools/ant/antlib.xml" classpathref="build.classpath"/>
+
+  <target name="clean" description="Remove generated files">
+    <delete dir="target"/>
+  </target>
+
+  <target name="c" description="Quick compile" depends="cs,cj"/>
+
+  <target name="cs" description="Compile scala">
+    <mkdir dir="target/classes"/>
+    <fsc
+        srcdir="src/main/scala"
+        destdir="target/classes"
+        classpathref="classpath"/>
+  </target>
+
+  <target name="cj" description="Compile java">
+    <mkdir dir="target/classes"/>
+    <javac
+        debug="true"
+        srcdir="src/main/scala"
+        destdir="target/classes"
+        classpathref="classpath"/>
+  </target>
+
+  <target name="compile" description="Compile" depends="cs,cj">
+    <mkdir dir="target/classes"/>
+
+    <copy todir="target/classes">
+      <fileset dir="src/main/resources"/>
+
+      <filterset>
+        <filter token="version" value="${version}"/>
+      </filterset>
+    </copy>
+  </target>
+
+  <target name="compile-test" description="Compile test classes" depends="compile">
+    <mkdir dir="target/test-classes"/>
+
+    <copy todir="target/test-classes">
+      <fileset dir="src/test/resources"/>
+    </copy>
+
+    <fsc
+        srcdir="src/test/scala"
+        destdir="target/test-classes"
+        classpathref="test.classpath"/>
+
+    <javac
+        debug="true"
+        srcdir="src/test/scala"
+        destdir="target/test-classes"
+        classpathref="test.classpath"/>
+  </target>
+
+  <target name="jar" description="Create jar" depends="compile">
+    <jar destfile="target/${name}-${version}.jar" basedir="target/classes"/>
+  </target>
+
+  <target name="test" depends="compile-test">
+    <junit fork="yes" haltonfailure="yes">
+      <sysproperty key="app.env" value="test"/>
+      <test name="com.rcc.mailchimp13.test.BeanTests"/>
+      <test name="com.rcc.mailchimp13.test.ServiceTests"/>
+      <formatter type="plain" usefile="false"/>
+      <classpath refid="test.classpath"/>
+    </junit>
+  </target>
+
+</project>
